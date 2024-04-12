@@ -104,30 +104,39 @@ void beginFrame() {
 
     VK_CHECK(vkAcquireNextImageKHR(device, swapchain.handle, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &imageIndex));
 
-    // begin command buffer
     VK_CHECK(vkResetCommandPool(device, cmdPool, 0));
 
-    VkCommandBufferBeginInfo cmdBufferBeginInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-    VK_CHECK(vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+    VK_CHECK(vkBeginCommandBuffer(
+        cmdBuffer,
+        &(VkCommandBufferBeginInfo) {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        }
+    ));
 
-    VkViewport viewport = {
-        .x = 0,
-        .y = swapchain.height,
-        .width = swapchain.width,
-        .height = -(f32)swapchain.height,
-        .minDepth = 0,
-        .maxDepth = 1,
-    };
-    vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+    vkCmdSetViewport(
+        cmdBuffer,
+        0,
+        1,
+        &(VkViewport) {
+            .x = 0,
+            .y = swapchain.height,
+            .width = swapchain.width,
+            .height = -(f32)swapchain.height,
+            .minDepth = 0,
+            .maxDepth = 1,
+        }
+    );
 
-    VkRect2D scissor = {
-        .offset = {.x = 0,                   .y = 0                    },
-        .extent = {.width = swapchain.width, .height = swapchain.height},
-    };
-    vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+    vkCmdSetScissor(
+        cmdBuffer,
+        0,
+        1,
+        &(VkRect2D) {
+            .offset = {.x = 0,                   .y = 0                    },
+            .extent = {.width = swapchain.width, .height = swapchain.height},
+    }
+    );
 
     pipelineImageBarrier(
         cmdBuffer,
@@ -155,27 +164,33 @@ void endFrame() {
 
     VK_CHECK(vkEndCommandBuffer(cmdBuffer));
 
-    VkSubmitInfo submitInfo = {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &acquireSemaphore,
-        .pWaitDstStageMask = (VkPipelineStageFlags[]) {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
-        .commandBufferCount = 1,
-        .pCommandBuffers = &cmdBuffer,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &releaseSemaphore,
-    };
-    VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+    VK_CHECK(vkQueueSubmit(
+        queue,
+        1,
+        &(VkSubmitInfo) {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &acquireSemaphore,
+            .pWaitDstStageMask = (VkPipelineStageFlags[]) {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+            .commandBufferCount = 1,
+            .pCommandBuffers = &cmdBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &releaseSemaphore,
+        },
+        VK_NULL_HANDLE
+    ));
 
-    VkPresentInfoKHR presentInfo = {
-        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &releaseSemaphore,
-        .swapchainCount = 1,
-        .pSwapchains = &swapchain.handle,
-        .pImageIndices = &imageIndex,
-    };
-    VK_CHECK(vkQueuePresentKHR(queue, &presentInfo));
+    VK_CHECK(vkQueuePresentKHR(
+        queue,
+        &(VkPresentInfoKHR) {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &releaseSemaphore,
+            .swapchainCount = 1,
+            .pSwapchains = &swapchain.handle,
+            .pImageIndices = &imageIndex,
+        }
+    ));
 
     VK_CHECK(vkDeviceWaitIdle(device));
 }

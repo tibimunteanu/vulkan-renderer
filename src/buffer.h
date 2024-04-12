@@ -18,31 +18,37 @@ Buffer createBuffer(
     VkBufferUsageFlags usage,
     VkMemoryPropertyFlags memoryPropertyFlags
 ) {
-    VkBufferCreateInfo bufferCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = size,
-        .usage = usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices = 0,
-    };
-
     VkBuffer handle = 0;
-    VK_CHECK(vkCreateBuffer(device, &bufferCreateInfo, 0, &handle));
+    VK_CHECK(vkCreateBuffer(
+        device,
+        &(VkBufferCreateInfo) {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = size,
+            .usage = usage,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = 0,
+        },
+        0,
+        &handle
+    ));
 
     VkMemoryRequirements bufferMemoryRequirements;
     vkGetBufferMemoryRequirements(device, handle, &bufferMemoryRequirements);
 
     u32 memoryTypeIndex = findMemoryTypeIndex(memoryProperties, bufferMemoryRequirements.memoryTypeBits, memoryPropertyFlags);
 
-    VkMemoryAllocateInfo allocateInfo = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize = bufferMemoryRequirements.size,
-        .memoryTypeIndex = memoryTypeIndex,
-    };
-
     VkDeviceMemory memory = 0;
-    VK_CHECK(vkAllocateMemory(device, &allocateInfo, 0, &memory));
+    VK_CHECK(vkAllocateMemory(
+        device,
+        &(VkMemoryAllocateInfo) {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = bufferMemoryRequirements.size,
+            .memoryTypeIndex = memoryTypeIndex,
+        },
+        0,
+        &memory
+    ));
 
     VK_CHECK(vkBindBufferMemory(device, handle, memory, 0));
 
