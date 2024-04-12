@@ -97,13 +97,7 @@ void uploadDataToBuffer(
 
     VK_CHECK(vkResetCommandPool(device, cmdPool, 0));
 
-    vkBeginCommandBuffer(
-        cmdBuffer,
-        &(VkCommandBufferBeginInfo) {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        }
-    );
+    beginCommandBuffer(cmdBuffer);
 
     vkCmdCopyBuffer(
         cmdBuffer,

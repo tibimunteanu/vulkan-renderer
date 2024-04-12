@@ -114,6 +114,32 @@ VkCommandBuffer allocateCommandBuffer(VkDevice device, VkCommandPool cmdPool) {
     return cmdBuffer;
 }
 
+void beginCommandBuffer(VkCommandBuffer cmdBuffer) {
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    VK_CHECK(vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo));
+}
+
+void setViewportAndScissor(VkCommandBuffer cmdBuffer, u32 width, u32 height) {
+    VkViewport viewport = {
+        .x = 0,
+        .y = height,
+        .width = width,
+        .height = -(f32)height,
+        .minDepth = 0,
+        .maxDepth = 1,
+    };
+    vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor = {
+        .offset = {.x = 0,         .y = 0          },
+        .extent = {.width = width, .height = height},
+    };
+    vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+}
+
 // NOTE: SYNC OBJECTS
 VkSemaphore createSemaphore(VkDevice device) {
     VkSemaphoreCreateInfo semaphoreCreateInfo = {

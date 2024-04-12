@@ -55,8 +55,7 @@ void createRenderer(GLFWwindow* window) {
 
     glfwGetFramebufferSize(window, &width, &height);
 
-    // TODO: check for support
-    format = VK_FORMAT_R8G8B8A8_UNORM;
+    format = getFormat();
 
     renderPass = createRenderPass(device, format);
     swapchain = createSwapchain(device, queueFamilyIndex, surface, renderPass, format, width, height, VK_NULL_HANDLE);
@@ -106,37 +105,9 @@ void beginFrame() {
 
     VK_CHECK(vkResetCommandPool(device, cmdPool, 0));
 
-    VK_CHECK(vkBeginCommandBuffer(
-        cmdBuffer,
-        &(VkCommandBufferBeginInfo) {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        }
-    ));
+    beginCommandBuffer(cmdBuffer);
 
-    vkCmdSetViewport(
-        cmdBuffer,
-        0,
-        1,
-        &(VkViewport) {
-            .x = 0,
-            .y = swapchain.height,
-            .width = swapchain.width,
-            .height = -(f32)swapchain.height,
-            .minDepth = 0,
-            .maxDepth = 1,
-        }
-    );
-
-    vkCmdSetScissor(
-        cmdBuffer,
-        0,
-        1,
-        &(VkRect2D) {
-            .offset = {.x = 0,                   .y = 0                    },
-            .extent = {.width = swapchain.width, .height = swapchain.height},
-    }
-    );
+    setViewportAndScissor(cmdBuffer, swapchain.width, swapchain.height);
 
     pipelineImageBarrier(
         cmdBuffer,

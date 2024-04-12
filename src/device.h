@@ -120,4 +120,9 @@ VkDevice createDevice(PhysicalDevice physicalDevice) {
     return device;
 }
 
+VkFormat getFormat() {
+    // TODO: check for support
+    return VK_FORMAT_R8G8B8A8_UNORM;
+}
+
 #endif /* __DEVICE__ */
