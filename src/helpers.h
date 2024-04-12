@@ -5,11 +5,7 @@
 
 VkImageView createImageView(VkDevice device, VkImage image, VkFormat format) {
     VkImageSubresourceRange subresourceRange = {
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = 1
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1
     };
 
     VkImageViewCreateInfo imageViewCreateInfo = {
@@ -63,9 +59,7 @@ VkRenderPass createRenderPass(VkDevice device, VkFormat format) {
     return renderPass;
 }
 
-VkFramebuffer createFramebuffer(
-    VkDevice device, VkRenderPass renderPass, VkImageView imageView, u32 width, u32 height
-) {
+VkFramebuffer createFramebuffer(VkDevice device, VkRenderPass renderPass, VkImageView imageView, u32 width, u32 height) {
     VkFramebufferCreateInfo fbCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .renderPass = renderPass,
@@ -83,9 +77,7 @@ VkFramebuffer createFramebuffer(
 }
 
 // NOTE: MEMORY
-u32 findMemoryTypeIndex(
-    VkPhysicalDeviceMemoryProperties memoryProperties, u32 memoryTypeBits, VkMemoryPropertyFlags flags
-) {
+u32 findMemoryTypeIndex(VkPhysicalDeviceMemoryProperties memoryProperties, u32 memoryTypeBits, VkMemoryPropertyFlags flags) {
     for (int i = 0; i < memoryProperties.memoryTypeCount; i++) {
         if ((memoryTypeBits & (1 << i)) != 0 && (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags) {
             return i;
@@ -96,22 +88,22 @@ u32 findMemoryTypeIndex(
 
 // NOTE: COMMAND BUFFERS
 VkCommandPool createCommandPool(VkDevice device, u32 queueFamilyIndex) {
-    VkCommandPoolCreateInfo commandPoolCreateInfo = {
+    VkCommandPoolCreateInfo cmdPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
         .queueFamilyIndex = queueFamilyIndex,
     };
 
-    VkCommandPool commandPool = 0;
-    VK_CHECK(vkCreateCommandPool(device, &commandPoolCreateInfo, 0, &commandPool));
+    VkCommandPool cmdPool = 0;
+    VK_CHECK(vkCreateCommandPool(device, &cmdPoolCreateInfo, 0, &cmdPool));
 
-    return commandPool;
+    return cmdPool;
 }
 
-VkCommandBuffer allocateCommandBuffer(VkDevice device, VkCommandPool commandPool) {
+VkCommandBuffer allocateCommandBuffer(VkDevice device, VkCommandPool cmdPool) {
     VkCommandBufferAllocateInfo cmdBufferAllocateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = commandPool,
+        .commandPool = cmdPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1,
     };

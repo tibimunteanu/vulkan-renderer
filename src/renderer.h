@@ -19,7 +19,7 @@ static VkFormat format;
 
 static VkRenderPass renderPass;
 static Swapchain swapchain;
-static VkCommandPool commandPool;
+static VkCommandPool cmdPool;
 static VkCommandBuffer cmdBuffer;
 static VkSemaphore acquireSemaphore;
 static VkSemaphore releaseSemaphore;
@@ -30,6 +30,7 @@ static VkShaderModule fs;
 static VkPipelineLayout layout;
 static VkPipeline pipeline;
 
+static Buffer scratch;
 static Buffer vb;
 static Buffer ib;
 
@@ -59,8 +60,8 @@ void createRenderer(GLFWwindow* window) {
 
     renderPass = createRenderPass(device, format);
     swapchain = createSwapchain(device, queueFamilyIndex, surface, renderPass, format, width, height, VK_NULL_HANDLE);
-    commandPool = createCommandPool(device, queueFamilyIndex);
-    cmdBuffer = allocateCommandBuffer(device, commandPool);
+    cmdPool = createCommandPool(device, queueFamilyIndex);
+    cmdBuffer = allocateCommandBuffer(device, cmdPool);
     acquireSemaphore = createSemaphore(device);
     releaseSemaphore = createSemaphore(device);
 
@@ -70,28 +71,32 @@ void createRenderer(GLFWwindow* window) {
     layout = createPipelineLayout(device);
     pipeline = createPipeline(device, layout, vs, fs, renderPass);
 
+    scratch = createBuffer(
+        device,
+        physicalDevice.memoryProperties,
+        MB(64),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    );
+
     vb = createBuffer(
         device,
         physicalDevice.memoryProperties,
         MB(64),
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
     ib = createBuffer(
         device,
         physicalDevice.memoryProperties,
         MB(64),
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
-    // TODO: replace with uploadDataToBuffer()
-    assert(vb.size >= sizeof(vertices));
-    memcpy(vb.data, vertices, sizeof(vertices));
-
-    assert(ib.size >= sizeof(indices));
-    memcpy(ib.data, indices, sizeof(indices));
+    uploadDataToBuffer(device, queue, cmdPool, cmdBuffer, scratch, vb, vertices, sizeof(vertices));
+    uploadDataToBuffer(device, queue, cmdPool, cmdBuffer, scratch, ib, indices, sizeof(indices));
 }
 
 void beginFrame() {
@@ -100,7 +105,7 @@ void beginFrame() {
     VK_CHECK(vkAcquireNextImageKHR(device, swapchain.handle, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &imageIndex));
 
     // begin command buffer
-    VK_CHECK(vkResetCommandPool(device, commandPool, 0));
+    VK_CHECK(vkResetCommandPool(device, cmdPool, 0));
 
     VkCommandBufferBeginInfo cmdBufferBeginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -180,13 +185,14 @@ void destroyRenderer() {
 
     destroyBuffer(device, ib);
     destroyBuffer(device, vb);
+    destroyBuffer(device, scratch);
     vkDestroyPipelineLayout(device, layout, 0);
     vkDestroyPipeline(device, pipeline, 0);
     vkDestroyShaderModule(device, fs, 0);
     vkDestroyShaderModule(device, vs, 0);
     vkDestroySemaphore(device, releaseSemaphore, 0);
     vkDestroySemaphore(device, acquireSemaphore, 0);
-    vkDestroyCommandPool(device, commandPool, 0);
+    vkDestroyCommandPool(device, cmdPool, 0);
     destroySwapchain(device, swapchain);
     vkDestroyRenderPass(device, renderPass, 0);
     vkDestroyDevice(device, 0);
