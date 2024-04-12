@@ -7,136 +7,191 @@
 #include "buffer.h"
 #include "swapchain.h"
 
-typedef struct Renderer {
-    GLFWwindow* window;
-    VkInstance instance;
-    VkSurfaceKHR surface;
+static VkInstance instance;
+static VkSurfaceKHR surface;
+static PhysicalDevice physicalDevice;
+static VkDevice device;
+static u32 queueFamilyIndex;
+static VkQueue queue;
 
-    PhysicalDevice physicalDevice;
-    VkDevice device;
-    u32 queueFamilyIndex;
-    VkQueue queue;
+static i32 width, height;
+static VkFormat format;
 
-    i32 width, height;
-    VkFormat format;
+static VkRenderPass renderPass;
+static Swapchain swapchain;
+static VkCommandPool commandPool;
+static VkCommandBuffer cmdBuffer;
+static VkSemaphore acquireSemaphore;
+static VkSemaphore releaseSemaphore;
 
-    VkRenderPass renderPass;
-    Swapchain swapchain;
-    VkCommandPool commandPool;
-    VkCommandBuffer cmdBuffer;
-    VkSemaphore acquireSemaphore;
-    VkSemaphore releaseSemaphore;
+static VkShaderModule vs;
+static VkShaderModule fs;
 
-    VkShaderModule vs;
-    VkShaderModule fs;
+static VkPipelineLayout layout;
+static VkPipeline pipeline;
 
-    VkPipelineLayout layout;
-    VkPipeline pipeline;
+static Buffer vb;
+static Buffer ib;
 
-    Buffer vb;
-    Buffer ib;
-} Renderer;
+static u32 imageIndex;
 
-static Renderer renderer = {};
-
-void createRenderer() {
-    assert(glfwInit());
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    renderer.window = glfwCreateWindow(960, 540, "Vulkan Renderer", 0, 0);
-    assert(renderer.window);
-
+void createRenderer(GLFWwindow* window) {
     VK_CHECK(volkInitialize());
 
-    renderer.instance = createInstance();
-    volkLoadInstance(renderer.instance);
+    instance = createInstance();
+    volkLoadInstance(instance);
 
-    renderer.surface = 0;
-    VK_CHECK(glfwCreateWindowSurface(renderer.instance, renderer.window, 0, &renderer.surface));
+    VK_CHECK(glfwCreateWindowSurface(instance, window, 0, &surface));
 
-    renderer.physicalDevice = pickPhysicalDevice(renderer.instance, renderer.surface);
+    physicalDevice = pickPhysicalDevice(instance, surface);
 
-    renderer.device = createDevice(renderer.physicalDevice);
-    volkLoadDevice(renderer.device);
+    device = createDevice(physicalDevice);
+    volkLoadDevice(device);
 
-    renderer.queueFamilyIndex = renderer.physicalDevice.queueFamilyIndex;
+    queueFamilyIndex = physicalDevice.queueFamilyIndex;
+    vkGetDeviceQueue(device, queueFamilyIndex, 0, &queue);
+    assert(queue);
 
-    renderer.queue = 0;
-    vkGetDeviceQueue(renderer.device, renderer.queueFamilyIndex, 0, &renderer.queue);
-    assert(renderer.queue);
-
-    glfwGetFramebufferSize(renderer.window, &renderer.width, &renderer.height);
+    glfwGetFramebufferSize(window, &width, &height);
 
     // TODO: check for support
-    renderer.format = VK_FORMAT_R8G8B8A8_UNORM;
+    format = VK_FORMAT_R8G8B8A8_UNORM;
 
-    renderer.renderPass = createRenderPass(renderer.device, renderer.format);
-    renderer.swapchain = createSwapchain(
-        renderer.device,
-        renderer.queueFamilyIndex,
-        renderer.surface,
-        renderer.renderPass,
-        renderer.format,
-        renderer.width,
-        renderer.height,
-        VK_NULL_HANDLE
-    );
-    renderer.commandPool = createCommandPool(renderer.device, renderer.queueFamilyIndex);
-    renderer.cmdBuffer = allocateCommandBuffer(renderer.device, renderer.commandPool);
-    renderer.acquireSemaphore = createSemaphore(renderer.device);
-    renderer.releaseSemaphore = createSemaphore(renderer.device);
+    renderPass = createRenderPass(device, format);
+    swapchain = createSwapchain(device, queueFamilyIndex, surface, renderPass, format, width, height, VK_NULL_HANDLE);
+    commandPool = createCommandPool(device, queueFamilyIndex);
+    cmdBuffer = allocateCommandBuffer(device, commandPool);
+    acquireSemaphore = createSemaphore(device);
+    releaseSemaphore = createSemaphore(device);
 
-    renderer.vs = loadShader(renderer.device, "assets/shaders/triangle.vert.spv");
-    renderer.fs = loadShader(renderer.device, "assets/shaders/triangle.frag.spv");
+    vs = loadShader(device, "assets/shaders/triangle.vert.spv");
+    fs = loadShader(device, "assets/shaders/triangle.frag.spv");
 
-    renderer.layout = createPipelineLayout(renderer.device);
-    renderer.pipeline = createPipeline(renderer.device, renderer.layout, renderer.vs, renderer.fs, renderer.renderPass);
+    layout = createPipelineLayout(device);
+    pipeline = createPipeline(device, layout, vs, fs, renderPass);
 
-    renderer.vb = createBuffer(
-        renderer.device,
-        renderer.physicalDevice.memoryProperties,
+    vb = createBuffer(
+        device,
+        physicalDevice.memoryProperties,
         MB(64),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     );
 
-    renderer.ib = createBuffer(
-        renderer.device,
-        renderer.physicalDevice.memoryProperties,
+    ib = createBuffer(
+        device,
+        physicalDevice.memoryProperties,
         MB(64),
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     );
 
     // TODO: replace with uploadDataToBuffer()
-    assert(renderer.vb.size >= sizeof(vertices));
-    memcpy(renderer.vb.data, vertices, sizeof(vertices));
+    assert(vb.size >= sizeof(vertices));
+    memcpy(vb.data, vertices, sizeof(vertices));
 
-    assert(renderer.ib.size >= sizeof(indices));
-    memcpy(renderer.ib.data, indices, sizeof(indices));
+    assert(ib.size >= sizeof(indices));
+    memcpy(ib.data, indices, sizeof(indices));
+}
+
+void beginFrame() {
+    swapchain = syncSwapchain(device, physicalDevice.handle, surface, queueFamilyIndex, format, renderPass, swapchain);
+
+    VK_CHECK(vkAcquireNextImageKHR(device, swapchain.handle, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &imageIndex));
+
+    // begin command buffer
+    VK_CHECK(vkResetCommandPool(device, commandPool, 0));
+
+    VkCommandBufferBeginInfo cmdBufferBeginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    VK_CHECK(vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+
+    VkViewport viewport = {
+        .x = 0,
+        .y = swapchain.height,
+        .width = swapchain.width,
+        .height = -(f32)swapchain.height,
+        .minDepth = 0,
+        .maxDepth = 1,
+    };
+    vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor = {
+        .offset = {.x = 0,                   .y = 0                    },
+        .extent = {.width = swapchain.width, .height = swapchain.height},
+    };
+    vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+    pipelineImageBarrier(
+        cmdBuffer,
+        swapchain.images[imageIndex],
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        0,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    );
+}
+
+void endFrame() {
+    pipelineImageBarrier(
+        cmdBuffer,
+        swapchain.images[imageIndex],
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        0,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    );
+
+    VK_CHECK(vkEndCommandBuffer(cmdBuffer));
+
+    VkSubmitInfo submitInfo = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &acquireSemaphore,
+        .pWaitDstStageMask = (VkPipelineStageFlags[]) {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmdBuffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &releaseSemaphore,
+    };
+    VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+
+    VkPresentInfoKHR presentInfo = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &releaseSemaphore,
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain.handle,
+        .pImageIndices = &imageIndex,
+    };
+    VK_CHECK(vkQueuePresentKHR(queue, &presentInfo));
+
+    VK_CHECK(vkDeviceWaitIdle(device));
 }
 
 void destroyRenderer() {
-    VK_CHECK(vkDeviceWaitIdle(renderer.device));
+    VK_CHECK(vkDeviceWaitIdle(device));
 
-    destroyBuffer(renderer.device, renderer.ib);
-    destroyBuffer(renderer.device, renderer.vb);
-    vkDestroyPipelineLayout(renderer.device, renderer.layout, 0);
-    vkDestroyPipeline(renderer.device, renderer.pipeline, 0);
-    vkDestroyShaderModule(renderer.device, renderer.fs, 0);
-    vkDestroyShaderModule(renderer.device, renderer.vs, 0);
-    vkDestroySemaphore(renderer.device, renderer.releaseSemaphore, 0);
-    vkDestroySemaphore(renderer.device, renderer.acquireSemaphore, 0);
-    vkDestroyCommandPool(renderer.device, renderer.commandPool, 0);
-    destroySwapchain(renderer.device, renderer.swapchain);
-    vkDestroyRenderPass(renderer.device, renderer.renderPass, 0);
-    vkDestroyDevice(renderer.device, 0);
-    vkDestroySurfaceKHR(renderer.instance, renderer.surface, 0);
-    vkDestroyInstance(renderer.instance, 0);
-
-    glfwDestroyWindow(renderer.window);
-
-    glfwTerminate();
+    destroyBuffer(device, ib);
+    destroyBuffer(device, vb);
+    vkDestroyPipelineLayout(device, layout, 0);
+    vkDestroyPipeline(device, pipeline, 0);
+    vkDestroyShaderModule(device, fs, 0);
+    vkDestroyShaderModule(device, vs, 0);
+    vkDestroySemaphore(device, releaseSemaphore, 0);
+    vkDestroySemaphore(device, acquireSemaphore, 0);
+    vkDestroyCommandPool(device, commandPool, 0);
+    destroySwapchain(device, swapchain);
+    vkDestroyRenderPass(device, renderPass, 0);
+    vkDestroyDevice(device, 0);
+    vkDestroySurfaceKHR(instance, surface, 0);
+    vkDestroyInstance(instance, 0);
 }
 
 #endif /* __RENDERER__ */

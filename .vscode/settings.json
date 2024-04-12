@@ -1,5 +1,6 @@
 {
   "files.associations": {
-    "glfw3native.h": "c"
+    "glfw3native.h": "c",
+    "stdint.h": "c"
   }
 }
