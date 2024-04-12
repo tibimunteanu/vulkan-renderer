@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Vulkan Renderer",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}/",
+      "environment": [],
+      "program": "${workspaceRoot}/bin/vulkan_renderer.exe",
+      "console": "integratedTerminal"
+    }
+  ]
+}
