@@ -13,9 +13,6 @@ pub fn build(b: *std.Build) !void {
 
     const cflags = [_][]const u8{
         "-std=c17",
-        // "-Wall",
-        // "-Wextra",
-        "-Werror=return-type",
         "-fno-sanitize=undefined",
     };
 
@@ -28,7 +25,9 @@ pub fn build(b: *std.Build) !void {
     exe.addIncludePath(b.path("include"));
     exe.addIncludePath(try getVulkanSDKIncludePath());
 
-    exe.defineCMacro("_DEBUG", null);
+    if (optimize == .Debug) {
+        exe.defineCMacro("_DEBUG", null);
+    }
 
     switch (builtin.os.tag) {
         .windows => {

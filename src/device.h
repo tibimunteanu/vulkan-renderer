@@ -89,7 +89,6 @@ PhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
     }
 
     assert(!"Could not find suitable device!");
-    return (PhysicalDevice) {};
 }
 
 VkDevice createDevice(PhysicalDevice physicalDevice) {
