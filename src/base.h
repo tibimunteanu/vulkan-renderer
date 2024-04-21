@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define VOLK_IMPLEMENTATION
 #include <volk/volk.h>
 #include <GLFW/glfw3.h>
 

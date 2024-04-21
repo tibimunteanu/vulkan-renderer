@@ -16,14 +16,15 @@ pub fn build(b: *std.Build) !void {
         "-fno-sanitize=undefined",
     };
 
-    exe.addCSourceFile(.{
-        .file = b.path("src/main.c"),
-        .flags = &cflags,
+    const source_files = try getSourceFiles(b, .{
+        .paths = &.{ "src", "include" },
+        .allowed_exts = &.{".c"},
     });
+    exe.addCSourceFiles(.{ .files = source_files.items, .flags = &cflags });
 
     exe.addIncludePath(b.path("src"));
     exe.addIncludePath(b.path("include"));
-    exe.addIncludePath(try getVulkanSDKIncludePath());
+    exe.addIncludePath(try getVulkanSDKIncludePath(b));
 
     if (optimize == .Debug) {
         exe.defineCMacro("_DEBUG", null);
@@ -57,10 +58,10 @@ pub fn build(b: *std.Build) !void {
         else => unreachable,
     }
 
-    const shader_steps = compileShaders(b, &.{
+    const shader_steps = try compileShaders(b, &.{
         "triangle",
     });
-    for (shader_steps) |step| {
+    for (shader_steps.items) |step| {
         exe.step.dependOn(step);
     }
 
@@ -77,20 +78,19 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&run_cmd.step);
 }
 
-fn getVulkanSDKIncludePath() !std.Build.LazyPath {
-    const allocator = std.heap.page_allocator;
-    const vulkan_sdk = try std.process.getEnvVarOwned(allocator, "VULKAN_SDK");
-    const path = try std.fmt.allocPrintZ(allocator, "{s}/Include", .{vulkan_sdk});
+fn getVulkanSDKIncludePath(b: *std.Build) !std.Build.LazyPath {
+    const vulkan_sdk = try std.process.getEnvVarOwned(b.allocator, "VULKAN_SDK");
+    const path = try std.fmt.allocPrintZ(b.allocator, "{s}/Include", .{vulkan_sdk});
 
     return .{ .cwd_relative = path };
 }
 
-inline fn compileShaders(b: *std.Build, shaders: []const []const u8) []*std.Build.Step {
+fn compileShaders(b: *std.Build, comptime shaders: []const []const u8) !std.ArrayList(*std.Build.Step) {
     const shader_types = [_][]const u8{ "vertex", "fragment" };
 
-    var steps: [shader_types.len]*std.Build.Step = undefined;
+    var steps = std.ArrayList(*std.Build.Step).init(b.allocator);
 
-    inline for (shader_types, 0..) |shader_type, i| {
+    inline for (shader_types) |shader_type| {
         inline for (shaders) |shader| {
             const shader_path = "assets/shaders/" ++ shader ++ "." ++ shader_type[0..4];
 
@@ -103,9 +103,43 @@ inline fn compileShaders(b: *std.Build, shaders: []const []const u8) []*std.Buil
                 shader_path ++ ".spv",
             });
 
-            steps[i] = &compile_shader.step;
+            try steps.append(&compile_shader.step);
         }
     }
 
-    return &steps;
+    return steps;
+}
+
+fn getSourceFiles(
+    b: *std.Build,
+    options: struct {
+        paths: []const []const u8,
+        allowed_exts: []const []const u8,
+    },
+) !std.ArrayList([]const u8) {
+    var sources = std.ArrayList([]const u8).init(b.allocator);
+
+    for (options.paths) |path| {
+        var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
+
+        var walker = try dir.walk(b.allocator);
+        defer walker.deinit();
+
+        while (try walker.next()) |entry| {
+            const ext = std.fs.path.extension(entry.basename);
+
+            const include_file = for (options.allowed_exts) |e| {
+                if (std.mem.eql(u8, ext, e)) {
+                    break true;
+                }
+            } else false;
+
+            if (include_file) {
+                const source_path = try std.fmt.allocPrintZ(b.allocator, "{s}/{s}", .{ path, entry.path });
+                try sources.append(source_path);
+            }
+        }
+    }
+
+    return sources;
 }

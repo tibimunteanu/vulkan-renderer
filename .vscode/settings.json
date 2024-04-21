@@ -1,6 +1,12 @@
 {
   "files.associations": {
-    "glfw3native.h": "c",
-    "stdint.h": "c"
+    "base.h": "c",
+    "buffer.h": "c",
+    "device.h": "c",
+    "helpers.h": "c",
+    "instance.h": "c",
+    "renderer.h": "c",
+    "shader.h": "c",
+    "swapchain.h": "c"
   }
 }

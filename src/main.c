@@ -36,7 +36,7 @@ int main() {
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vb.handle, (VkDeviceSize[]) {0});
         vkCmdBindIndexBuffer(cmdBuffer, ib.handle, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(cmdBuffer, ARRAY_SIZE(indices), 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
 
         vkCmdEndRenderPass(cmdBuffer);
 
