@@ -165,6 +165,7 @@ void endFrame() {
         }
     ));
 
+    // NOTE: for simplicity, the cpu waits for the gpu to finish the frame
     VK_CHECK(vkDeviceWaitIdle(device));
 }
 

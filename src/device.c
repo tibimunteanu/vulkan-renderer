@@ -17,8 +17,8 @@ PhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(handle, &properties);
 
-// ensure discrete gpu
 #ifndef VK_USE_PLATFORM_METAL_EXT
+        // ensure discrete gpu
         if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
             continue;
         }
