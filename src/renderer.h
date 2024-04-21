@@ -7,6 +7,7 @@
 #include "buffer.h"
 #include "swapchain.h"
 
+// NOTE: for simplicity, we share these globals between all files
 extern VkInstance instance;
 extern VkSurfaceKHR surface;
 extern PhysicalDevice physicalDevice;
