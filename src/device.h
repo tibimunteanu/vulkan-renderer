@@ -28,10 +28,12 @@ PhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(handle, &properties);
 
-        // ensure discrete gpu
+// ensure discrete gpu
+#ifndef VK_USE_PLATFORM_METAL_EXT
         if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
             continue;
         }
+#endif
 
         // ensure queue support
         u32 qfPropertyCount = 0;
@@ -87,6 +89,7 @@ PhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
     }
 
     assert(!"Could not find suitable device!");
+    return (PhysicalDevice) {};
 }
 
 VkDevice createDevice(PhysicalDevice physicalDevice) {

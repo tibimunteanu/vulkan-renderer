@@ -3,13 +3,25 @@
   "configurations": [
     {
       "name": "Launch Vulkan Renderer",
-      "type": "cppvsdbg",
+      "type": "cppdbg",
       "request": "launch",
       "stopAtEntry": false,
-      "cwd": "${workspaceRoot}/",
+      "cwd": "${workspaceFolder}/",
       "environment": [],
-      "program": "${workspaceRoot}/bin/vulkan_renderer.exe",
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/zig-out/bin/vulkan-renderer",
+      "osx": {
+        "MIMode": "lldb",
+        "targetArchitecture": "arm64",
+        "externalConsole": false
+      },
+      "linux": {
+        "externalConsole": false
+      },
+      "windows": {
+        "type": "cppvsdbg",
+        "program": "${workspaceFolder}/zig-out/bin/vulkan-renderer.exe",
+        "console": "integratedTerminal"
+      }
     }
   ]
 }

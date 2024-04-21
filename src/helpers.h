@@ -84,6 +84,7 @@ u32 findMemoryTypeIndex(VkPhysicalDeviceMemoryProperties memoryProperties, u32 m
         }
     }
     assert(!"Could not find memory type index!");
+    return -1;
 }
 
 // NOTE: COMMAND BUFFERS

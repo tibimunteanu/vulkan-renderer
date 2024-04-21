@@ -5,8 +5,8 @@
       "includePath": ["include", "${VULKAN_SDK}/Include"],
       "defines": [
         "_DEBUG",
-        "WIN32_LEAN_AND_MEAN",
         "NOMINMAX",
+        "WIN32_LEAN_AND_MEAN",
         "_CRT_SECURE_NO_WARNINGS",
         "VK_USE_PLATFORM_WIN32_KHR"
       ],
@@ -14,6 +14,23 @@
       "compilerPath": "C:/llvm-mingw/bin/clang.exe",
       "cStandard": "c17",
       "intelliSenseMode": "clang-x64"
+    },
+    {
+      "name": "Linux",
+      "includePath": ["include", "${VULKAN_SDK}/include"],
+      "defines": ["_DEBUG", "VK_USE_PLATFORM_WAYLAND_KHR"],
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "c17",
+      "intelliSenseMode": "clang-x64"
+    },
+    {
+      "name": "Mac",
+      "includePath": ["include", "${VULKAN_SDK}/include"],
+      "defines": ["_DEBUG", "VK_USE_PLATFORM_METAL_EXT"],
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "c17",
+      "macFrameworkPath": ["/System/Library/Frameworks", "/Library/Frameworks"],
+      "intelliSenseMode": "macos-clang-x64"
     }
   ],
   "version": 4

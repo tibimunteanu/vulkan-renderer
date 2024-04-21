@@ -4,7 +4,7 @@
     {
       "type": "shell",
       "label": "Build",
-      "command": "${workspaceFolder}/build.bat",
+      "command": "zig build",
       "options": {
         "cwd": "${workspaceFolder}"
       },

@@ -7,6 +7,13 @@ static const char* instanceExtensions[] = {
     VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+    // VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+    // "VK_MVK_macos_surface",
+    VK_EXT_METAL_SURFACE_EXTENSION_NAME,
+    VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
 #endif
 };
 
@@ -22,6 +29,9 @@ VkInstance createInstance() {
 
     VkInstanceCreateInfo instanceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+#if defined(VK_USE_PLATFORM_METAL_EXT)
+        .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
+#endif
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = 0,
