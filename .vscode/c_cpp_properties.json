@@ -1,10 +1,18 @@
 {
+  "env": {
+    "myIncludePaths": [
+      "${workspaceFolder}/include",
+      "${workspaceFolder}/src",
+      "${VULKAN_SDK}/Include"
+    ],
+    "myDefines": ["_DEBUG"]
+  },
   "configurations": [
     {
       "name": "Win32",
-      "includePath": ["include", "${VULKAN_SDK}/Include"],
+      "includePath": ["${myIncludePaths}"],
       "defines": [
-        "_DEBUG",
+        "${myDefines}",
         "NOMINMAX",
         "WIN32_LEAN_AND_MEAN",
         "_CRT_SECURE_NO_WARNINGS",
@@ -17,20 +25,20 @@
     },
     {
       "name": "Linux",
-      "includePath": ["include", "${VULKAN_SDK}/include"],
-      "defines": ["_DEBUG", "VK_USE_PLATFORM_WAYLAND_KHR"],
+      "includePath": ["${myIncludePaths}"],
+      "defines": ["${myDefines}", "VK_USE_PLATFORM_WAYLAND_KHR"],
       "compilerPath": "/usr/bin/clang",
       "cStandard": "c17",
       "intelliSenseMode": "clang-x64"
     },
     {
       "name": "Mac",
-      "includePath": ["include", "${VULKAN_SDK}/include"],
-      "defines": ["_DEBUG", "VK_USE_PLATFORM_METAL_EXT"],
+      "includePath": ["${myIncludePaths}"],
+      "defines": ["${myDefines}", "VK_USE_PLATFORM_METAL_EXT"],
       "compilerPath": "/usr/bin/clang",
       "cStandard": "c17",
       "macFrameworkPath": ["/System/Library/Frameworks", "/Library/Frameworks"],
-      "intelliSenseMode": "macos-clang-x64"
+      "intelliSenseMode": "macos-clang-arm64"
     }
   ],
   "version": 4

@@ -12,7 +12,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const cflags = [_][]const u8{
-        // "-std=c99",
+        "-std=c17",
         // "-Wall",
         // "-Wextra",
         "-Werror=return-type",
@@ -24,6 +24,7 @@ pub fn build(b: *std.Build) !void {
         .flags = &cflags,
     });
 
+    exe.addIncludePath(b.path("src"));
     exe.addIncludePath(b.path("include"));
     exe.addIncludePath(try getVulkanSDKIncludePath());
 
