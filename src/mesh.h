@@ -1,5 +1,6 @@
 #ifndef __MESH__
 #define __MESH__
+
 #include "base.h"
 
 typedef struct Vertex3D {
