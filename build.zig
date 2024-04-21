@@ -36,21 +36,21 @@ pub fn build(b: *std.Build) !void {
             exe.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
             exe.defineCMacro("VK_USE_PLATFORM_WIN32_KHR", null);
 
-            exe.addLibraryPath(b.path("lib/lib-x86_64"));
-            exe.linkSystemLibrary("glfw3");
+            exe.addLibraryPath(b.path("lib/x86_64"));
+            exe.linkSystemLibrary("glfw3dll");
             exe.linkLibC();
         },
         .linux => {
             exe.defineCMacro("VK_USE_PLATFORM_WAYLAND_KHR", null);
 
-            exe.addLibraryPath(b.path("lib/lib-x86_64"));
+            exe.addLibraryPath(b.path("lib/x86_64"));
             exe.linkSystemLibrary("glfw3");
             exe.linkLibC();
         },
         .macos => {
             exe.defineCMacro("VK_USE_PLATFORM_METAL_EXT", null);
 
-            exe.addLibraryPath(b.path("lib/lib-arm64"));
+            exe.addLibraryPath(b.path("lib/arm64"));
             exe.linkSystemLibrary("glfw.3");
             exe.linkFramework("Foundation");
         },
