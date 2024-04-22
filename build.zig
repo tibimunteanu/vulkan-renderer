@@ -11,19 +11,28 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    if (b.lazyDependency("glfw", .{
+        .target = target,
+        .optimize = optimize,
+    })) |dep| {
+        exe.root_module.linkLibrary(dep.artifact("glfw"));
+        @import("glfw").addPaths(&exe.root_module);
+    }
+
     const cflags = [_][]const u8{
         "-std=c17",
         "-fno-sanitize=undefined",
     };
 
     const source_files = try getSourceFiles(b, .{
-        .paths = &.{ "src", "include" },
+        .paths = &.{ "src", "libs/volk" },
         .allowed_exts = &.{".c"},
     });
     exe.addCSourceFiles(.{ .files = source_files.items, .flags = &cflags });
 
     exe.addIncludePath(b.path("src"));
-    exe.addIncludePath(b.path("include"));
+    exe.addIncludePath(b.path("libs/glfw/include"));
+    exe.addIncludePath(b.path("libs/volk"));
     exe.addIncludePath(try getVulkanSDKIncludePath(b));
 
     if (optimize == .Debug) {
@@ -36,23 +45,14 @@ pub fn build(b: *std.Build) !void {
             exe.defineCMacro("WIN32_LEAN_AND_MEAN", null);
             exe.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
             exe.defineCMacro("VK_USE_PLATFORM_WIN32_KHR", null);
-
-            exe.addLibraryPath(b.path("lib/x86_64"));
-            exe.linkSystemLibrary("glfw3dll");
             exe.linkLibC();
         },
         .linux => {
             exe.defineCMacro("VK_USE_PLATFORM_WAYLAND_KHR", null);
-
-            exe.addLibraryPath(b.path("lib/x86_64"));
-            exe.linkSystemLibrary("glfw3");
             exe.linkLibC();
         },
         .macos => {
             exe.defineCMacro("VK_USE_PLATFORM_METAL_EXT", null);
-
-            exe.addLibraryPath(b.path("lib/arm64"));
-            exe.linkSystemLibrary("glfw.3");
             exe.linkFramework("Foundation");
         },
         else => unreachable,
