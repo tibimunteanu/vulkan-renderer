@@ -1,7 +1,8 @@
 {
   "env": {
     "myIncludePaths": [
-      "${workspaceFolder}/include",
+      "${workspaceFolder}/libs/glfw/include",
+      "${workspaceFolder}/libs/volk",
       "${workspaceFolder}/src",
       "${VULKAN_SDK}/Include"
     ],
