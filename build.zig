@@ -11,13 +11,9 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    if (b.lazyDependency("glfw", .{
-        .target = target,
-        .optimize = optimize,
-    })) |dep| {
-        exe.root_module.linkLibrary(dep.artifact("glfw"));
-        @import("glfw").addPaths(&exe.root_module);
-    }
+    const glfw_dep = b.dependency("glfw", .{ .target = target, .optimize = optimize });
+    exe.root_module.linkLibrary(glfw_dep.artifact("glfw"));
+    @import("glfw").addPaths(&exe.root_module);
 
     const cflags = [_][]const u8{
         "-std=c17",
